@@ -436,7 +436,7 @@ public abstract class ParameterParser {
             buffer.delete(0, buffer.length());
         }
 
-        private class ReaderParameterSpliterator implements ParameterStream.Spliterator {
+        private final class ReaderParameterSpliterator implements ParameterStream.Spliterator {
 
             @Override
             public boolean tryAdvance(BiConsumer<? super String, ? super String> action) {
