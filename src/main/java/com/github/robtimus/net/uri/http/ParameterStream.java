@@ -29,6 +29,7 @@ import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 import java.util.stream.BaseStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -73,6 +74,34 @@ public final class ParameterStream {
      */
     public <R> Stream<R> map(BiFunction<? super String, ? super String, ? extends R> mapper) {
         return stream.map(Parameter.function(mapper));
+    }
+
+    /**
+     * Returns a stream consisting of the results of applying the given function to the parameter names of this stream. The values remain unchanged.
+     * <p>
+     * This is an intermediate operation.
+     *
+     * @param mapper A function to apply to each parameter name.
+     * @return The new stream.
+     * @throws NullPointerException If the given mapper is {@code null}.
+     * @see Stream#map(Function)
+     */
+    public ParameterStream mapName(Function<? super String, String> mapper) {
+        return new ParameterStream(stream.map(Parameter.nameFunction(mapper)));
+    }
+
+    /**
+     * Returns a stream consisting of the results of applying the given function to the parameter values of this stream. The names remain unchanged.
+     * <p>
+     * This is an intermediate operation.
+     *
+     * @param mapper A function to apply to each parameter value.
+     * @return The new stream.
+     * @throws NullPointerException If the given mapper is {@code null}.
+     * @see Stream#map(Function)
+     */
+    public ParameterStream mapValue(Function<? super String, String> mapper) {
+        return new ParameterStream(stream.map(Parameter.valueFunction(mapper)));
     }
 
     /**
@@ -528,6 +557,28 @@ public final class ParameterStream {
             this.value = Objects.requireNonNull(value);
         }
 
+        private Parameter withName(String name) {
+            if (isShared) {
+                this.name = Objects.requireNonNull(name);
+                return this;
+            }
+            if (this.name.equals(name)) {
+                return this;
+            }
+            return nonSharedParameter(name, value);
+        }
+
+        private Parameter withValue(String value) {
+            if (isShared) {
+                this.value = Objects.requireNonNull(value);
+                return this;
+            }
+            if (this.value.equals(value)) {
+                return this;
+            }
+            return nonSharedParameter(name, value);
+        }
+
         // equals and hashCode only exist for distinct() support
         // These will never be called before update will be called, and therefore a name and value will be available
 
@@ -557,6 +608,16 @@ public final class ParameterStream {
         private static <R> Function<Parameter, R> function(BiFunction<? super String, ? super String, ? extends R> function) {
             Objects.requireNonNull(function);
             return parameter -> function.apply(parameter.name, parameter.value);
+        }
+
+        private static UnaryOperator<Parameter> nameFunction(Function<? super String, String> function) {
+            Objects.requireNonNull(function);
+            return parameter -> parameter.withName(function.apply(parameter.name));
+        }
+
+        private static UnaryOperator<Parameter> valueFunction(Function<? super String, String> function) {
+            Objects.requireNonNull(function);
+            return parameter -> parameter.withValue(function.apply(parameter.value));
         }
 
         private static Consumer<Parameter> consumer(BiConsumer<? super String, ? super String> consumer) {

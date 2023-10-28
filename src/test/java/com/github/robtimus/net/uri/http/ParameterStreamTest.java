@@ -45,6 +45,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
@@ -109,6 +110,188 @@ class ParameterStreamTest {
                 .stream()
                 .forEach(entry -> verify(mapper, times(entry.getValue().intValue())).apply(entry.getKey().name, entry.getKey().value));
         verifyNoMoreInteractions(mapper);
+    }
+
+    @Nested
+    class MapName {
+
+        @Test
+        void testWithSharedParameters() {
+            UnaryOperator<String> mapper = mockUnaryOperator();
+            when(mapper.apply(anyString())).thenAnswer(i -> i.getArgument(0, String.class).toUpperCase());
+
+            Stream<Parameter> stream = createStream()
+                    .mapName(mapper)
+                    .map(Parameter::new);
+
+            verify(mapper, never()).apply(anyString());
+
+            List<Parameter> expected = parameters()
+                    .stream()
+                    .map(p -> new Parameter(p.name.toUpperCase(), p.value))
+                    .collect(Collectors.toList());
+
+            List<Parameter> parameters = stream.collect(Collectors.toList());
+
+            assertEquals(expected, parameters);
+
+            parameters().stream()
+                    .map(Parameter::name)
+                    .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+                    .entrySet()
+                    .stream()
+                    .forEach(entry -> verify(mapper, times(entry.getValue().intValue())).apply(entry.getKey()));
+            verifyNoMoreInteractions(mapper);
+        }
+
+        @Test
+        void testWithNonSharedParameters() {
+            UnaryOperator<String> mapper = mockUnaryOperator();
+            when(mapper.apply(anyString())).thenAnswer(i -> i.getArgument(0, String.class).toUpperCase());
+
+            Stream<Parameter> stream = createStream()
+                    .distinct()
+                    .mapName(mapper)
+                    .map(Parameter::new);
+
+            verify(mapper, never()).apply(anyString());
+
+            List<Parameter> expected = parameters()
+                    .stream()
+                    .distinct()
+                    .map(p -> new Parameter(p.name.toUpperCase(), p.value))
+                    .collect(Collectors.toList());
+
+            List<Parameter> parameters = stream.collect(Collectors.toList());
+
+            assertEquals(expected, parameters);
+
+            parameters().stream()
+                    .distinct()
+                    .map(Parameter::name)
+                    .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+                    .entrySet()
+                    .stream()
+                    .forEach(entry -> verify(mapper, times(entry.getValue().intValue())).apply(entry.getKey()));
+            verifyNoMoreInteractions(mapper);
+        }
+
+        @Test
+        void testWithNoChanges() {
+            UnaryOperator<String> mapper = mockUnaryOperator();
+            when(mapper.apply(anyString())).thenAnswer(i -> i.getArgument(0));
+
+            Stream<Parameter> stream = createStream()
+                    .mapName(mapper)
+                    .map(Parameter::new);
+
+            verify(mapper, never()).apply(anyString());
+
+            List<Parameter> expected = parameters();
+
+            List<Parameter> parameters = stream.collect(Collectors.toList());
+
+            assertEquals(expected, parameters);
+
+            parameters().stream()
+                    .map(Parameter::name)
+                    .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+                    .entrySet()
+                    .stream()
+                    .forEach(entry -> verify(mapper, times(entry.getValue().intValue())).apply(entry.getKey()));
+            verifyNoMoreInteractions(mapper);
+        }
+    }
+
+    @Nested
+    class MapValue {
+
+        @Test
+        void testWithSharedParameters() {
+            UnaryOperator<String> mapper = mockUnaryOperator();
+            when(mapper.apply(anyString())).thenAnswer(i -> i.getArgument(0, String.class).toUpperCase());
+
+            Stream<Parameter> stream = createStream()
+                    .mapValue(mapper)
+                    .map(Parameter::new);
+
+            verify(mapper, never()).apply(anyString());
+
+            List<Parameter> expected = parameters()
+                    .stream()
+                    .map(p -> new Parameter(p.name, p.value.toUpperCase()))
+                    .collect(Collectors.toList());
+
+            List<Parameter> parameters = stream.collect(Collectors.toList());
+
+            assertEquals(expected, parameters);
+
+            parameters().stream()
+                    .map(Parameter::value)
+                    .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+                    .entrySet()
+                    .stream()
+                    .forEach(entry -> verify(mapper, times(entry.getValue().intValue())).apply(entry.getKey()));
+            verifyNoMoreInteractions(mapper);
+        }
+
+        @Test
+        void testWithNonSharedParameters() {
+            UnaryOperator<String> mapper = mockUnaryOperator();
+            when(mapper.apply(anyString())).thenAnswer(i -> i.getArgument(0, String.class).toUpperCase());
+
+            Stream<Parameter> stream = createStream()
+                    .distinct()
+                    .mapValue(mapper)
+                    .map(Parameter::new);
+
+            verify(mapper, never()).apply(anyString());
+
+            List<Parameter> expected = parameters()
+                    .stream()
+                    .distinct()
+                    .map(p -> new Parameter(p.name, p.value.toUpperCase()))
+                    .collect(Collectors.toList());
+
+            List<Parameter> parameters = stream.collect(Collectors.toList());
+
+            assertEquals(expected, parameters);
+
+            parameters().stream()
+                    .distinct()
+                    .map(Parameter::value)
+                    .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+                    .entrySet()
+                    .stream()
+                    .forEach(entry -> verify(mapper, times(entry.getValue().intValue())).apply(entry.getKey()));
+            verifyNoMoreInteractions(mapper);
+        }
+
+        @Test
+        void testWithNoChanges() {
+            UnaryOperator<String> mapper = mockUnaryOperator();
+            when(mapper.apply(anyString())).thenAnswer(i -> i.getArgument(0));
+
+            Stream<Parameter> stream = createStream()
+                    .mapValue(mapper)
+                    .map(Parameter::new);
+
+            verify(mapper, never()).apply(anyString());
+
+            List<Parameter> expected = parameters();
+
+            List<Parameter> parameters = stream.collect(Collectors.toList());
+
+            assertEquals(expected, parameters);
+
+            parameters().stream()
+                    .map(Parameter::value)
+                    .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+                    .entrySet()
+                    .stream()
+                    .forEach(entry -> verify(mapper, times(entry.getValue().intValue())).apply(entry.getKey()));
+            verifyNoMoreInteractions(mapper);
+        }
     }
 
     @Test
@@ -787,6 +970,11 @@ class ParameterStreamTest {
     @SuppressWarnings("unchecked")
     private <R> BiFunction<String, String, R> mockFunction() {
         return mock(BiFunction.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    private UnaryOperator<String> mockUnaryOperator() {
+        return mock(UnaryOperator.class);
     }
 
     @SuppressWarnings("unchecked")
